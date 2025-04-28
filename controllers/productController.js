@@ -6,7 +6,16 @@ const asyncHandler = require("../utils/asyncHandler");
 // @route   GET /api/v1/products
 // @access  Public
 exports.getProducts = asyncHandler(async (req, res, next) => {
-  res.status(200).json(res.advancedResults);
+  const products = await Product.find().populate({
+    path: "user",
+    select: "name email",
+  });
+
+  res.status(200).json({
+    success: true,
+    count: products.length,
+    data: products,
+  });
 });
 
 // @desc    Get single product
@@ -90,7 +99,7 @@ exports.deleteProduct = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Make sure user is product owner or admin
+  // Authorization check
   if (product.user.toString() !== req.user.id && req.user.role !== "admin") {
     return next(
       new ErrorResponse(
@@ -100,10 +109,12 @@ exports.deleteProduct = asyncHandler(async (req, res, next) => {
     );
   }
 
-  await product.remove();
+  // Use deleteOne() or findByIdAndDelete() instead of remove()
+  await Product.deleteOne({ _id: req.params.id });
+  // OR: await product.deleteOne();
 
   res.status(200).json({
     success: true,
-    data: {},
+    id: req.params.id,
   });
 });
